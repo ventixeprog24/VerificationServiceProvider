@@ -1,6 +1,6 @@
 ﻿using VerificationServiceProvider.Interfaces;
 
-namespace VerificationServiceProvider.Infrastructure
+namespace VerificationServiceProvider.Components
 {
     public class VerificationCodeGenerator : ICodeGenerator
     {

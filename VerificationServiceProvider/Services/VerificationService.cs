@@ -1,16 +1,19 @@
 ﻿using Grpc.Core;
+using JwtTokenServiceProvider;
 using System.Diagnostics;
+using VerificationServiceProvider.Dtos;
 using VerificationServiceProvider.Factories;
 using VerificationServiceProvider.Interfaces;
-using VerificationServiceProvider.Models.Verification;
+using JwtTokenServiceClient = JwtTokenServiceProvider.JwtTokenServiceContract.JwtTokenServiceContractClient;
 
 namespace VerificationServiceProvider.Services
 {
-    public class VerificationService(IVerificationEmailFactory emailFactory, IVerificationCacheHandler cacheHandler, ICodeGenerator codeGenerator) : VerificationContract.VerificationContractBase
+    public class VerificationService(IVerificationEmailFactory emailFactory, IVerificationCacheHandler cacheHandler, ICodeGenerator codeGenerator, JwtTokenServiceClient jwtTokenService) : VerificationContract.VerificationContractBase
     {
         private readonly IVerificationEmailFactory _emailFactory = emailFactory;
         private readonly IVerificationCacheHandler _cacheHandler = cacheHandler;
         private readonly ICodeGenerator _codeGenerator = codeGenerator;
+        private readonly JwtTokenServiceClient _jwtTokenService = jwtTokenService;
         //private readonly EmailServiceProvider _emailService = emailService;
 
         public override async Task<VerificationReply> SendVerificationCode(SendVerificationCodeRequest request, ServerCallContext context)
@@ -20,30 +23,27 @@ namespace VerificationServiceProvider.Services
                 if (request == null || string.IsNullOrWhiteSpace(request.Email))
                     return VerificationReplyFactory.Failed("Email address is required.");
 
-                var verificationCode = _codeGenerator.GenerateVerificationCode();
-                var verificationToken = Guid.NewGuid().ToString();  //** Använda jwt servicen istället?
-                var emailMessage = _emailFactory.Create(request.Email, verificationCode, verificationToken);
+                var code = _codeGenerator.GenerateVerificationCode();
+
+                var tokenReply = await _jwtTokenService.GenerateTokenAsync(new TokenRequest { Email = request.Email });
+                if (!tokenReply.Succeeded)
+                    return VerificationReplyFactory.Failed("Failed to generate token.");
+
+                var emailMessage = _emailFactory.Create(request.Email, code, tokenReply.TokenMessage);
 
                 //** Ersätta med EmailServiceProvider
                 var emailSent = await _emailService.SendEmailAsync(emailMessage);
                 if (!emailSent)
                     return VerificationReplyFactory.Failed("Failed to send verification email.");
 
-                _cacheHandler.SaveVerificationCode(new SaveVerificationCodeModel
+                _cacheHandler.SaveVerificationCode(new SaveVerificationCodeDto
                 {
                     Email = request.Email,
-                    Code = verificationCode,
+                    Code = code,
                     ValidFor = TimeSpan.FromMinutes(15)
                 });
 
-                _cacheHandler.SaveVerificationToken(new SaveVerificationTokenModel
-                {
-                    Email = request.Email,
-                    Token = verificationToken,
-                    ValidFor = TimeSpan.FromMinutes(15)
-                });
-
-                return VerificationReplyFactory.Success("Verification email sent successfully.");
+                return VerificationReplyFactory.Success("Verification email sent.");
             }
             catch (Exception ex)
             {
@@ -56,10 +56,10 @@ namespace VerificationServiceProvider.Services
         {
             try
             {
-                var valid = _cacheHandler.ValidateCode(new CodeValidationModel { Email = request.Email, Code = request.Code });
+                var valid = _cacheHandler.ValidateVerificationCode(new CodeValidationDto { Email = request.Email, Code = request.Code });
 
                 return Task.FromResult(valid
-                    ? VerificationReplyFactory.Success()
+                    ? VerificationReplyFactory.Success("Valid code.")
                     : VerificationReplyFactory.Failed("Invalid or expired verification code."));
             }
             catch (Exception ex)
@@ -69,20 +69,20 @@ namespace VerificationServiceProvider.Services
             }
         }
 
-        public override Task<VerificationReply> ValidateVerificationToken(ValidateVerificationTokenRequest request, ServerCallContext context)
+        public override async Task<VerificationReply> ValidateVerificationToken(ValidateVerificationTokenRequest request, ServerCallContext context)
         {
             try
             {
-                var valid = _cacheHandler.ValidateToken(new TokenValidationModel { Email = request.Email, Token = request.Token });
+                var valid = await _jwtTokenService.ValidateTokenAsync(new ValidateRequest { Token = request.Token });
 
-                return Task.FromResult(valid
-                    ? VerificationReplyFactory.Success()
-                    : VerificationReplyFactory.Failed("Invalid or expired verification token."));
+                return valid.IsTokenOk
+                    ? VerificationReplyFactory.Success("Valid token")
+                    : VerificationReplyFactory.Failed("Invalid or expired verification token.");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
-                return Task.FromResult(VerificationReplyFactory.Failed("Failed to validate verification token."));
+                return VerificationReplyFactory.Failed("Failed to validate verification token.");
             }
         }
     }
