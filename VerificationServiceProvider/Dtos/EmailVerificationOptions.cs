@@ -1,4 +1,4 @@
-﻿namespace VerificationServiceProvider.Models.Email
+﻿namespace VerificationServiceProvider.Dtos
 {
     public class EmailVerificationOptions
     {

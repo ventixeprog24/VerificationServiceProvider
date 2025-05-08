@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
+using VerificationServiceProvider.Dtos;
 using VerificationServiceProvider.Interfaces;
-using VerificationServiceProvider.Models.Email;
 
 namespace VerificationServiceProvider.Factories
 {

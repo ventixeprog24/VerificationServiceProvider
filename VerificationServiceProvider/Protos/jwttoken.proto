@@ -1,0 +1,28 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "JwtTokenServiceProvider";
+
+package jwttoken;
+
+service JwtTokenServiceContract {
+  rpc GenerateToken (TokenRequest) returns (TokenReply);
+
+  rpc ValidateToken (ValidateRequest) returns (ValidateReply);
+}
+
+message TokenRequest {
+  string email = 2;
+}
+
+message TokenReply {
+  bool succeeded = 1;
+  string token_message = 2;
+}
+
+message ValidateRequest {
+  string token = 1;
+}
+
+message ValidateReply {
+  bool is_token_ok = 1;
+}
