@@ -1,4 +1,4 @@
-﻿namespace VerificationServiceProvider.Models
+﻿namespace VerificationServiceProvider.Models.Verification
 {
     public class SaveVerificationTokenModel
     {

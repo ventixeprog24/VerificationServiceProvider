@@ -1,23 +1,28 @@
-﻿using VerificationServiceProvider.Models;
+﻿using Microsoft.Extensions.Options;
+using VerificationServiceProvider.Interfaces;
+using VerificationServiceProvider.Models.Email;
 
 namespace VerificationServiceProvider.Factories
 {
-    public interface IVerificationEmailFactory
-    { 
-        EmailMessage Create(string email, string code, string token);
-    }
-
-    public class VerificationEmailFactory : IVerificationEmailFactory
+    public class VerificationEmailFactory(IOptions<EmailVerificationOptions> options) : IVerificationEmailFactory
     {
-        // *** Ersätta med modellen från EmailServiceProvider Proto filen
+        private readonly EmailVerificationOptions _settings = options.Value;
+
+        // *** Ersätta med modellen från EmailServiceProvider Proto filen + i interfacet
         public EmailMessage Create(string email, string code, string token)
         {
-            return new EmailMessage 
+            return new EmailMessage
             {
                 Recipients = email,
-                SenderAddress = "", 
                 Subject = $"Verification code: {code}",
-                PlainText = $@"
+                PlainText = CreatePlainText(email, code, token),
+                Html = CreateHtml(email, code, token)
+            };
+        }
+
+        private string CreatePlainText(string email, string code, string token)
+        {
+            return $@"
                         Verify Your Email Address
 
                         Hello,
@@ -27,21 +32,27 @@ namespace VerificationServiceProvider.Factories
                         {code}
 
                         Alternatively, you can open the verification page using the following link:
-                        https://localhost:7065/account-verification?email={email}&token={token}
+                        {_settings.FrontendUrl}{_settings.VerificationPath}?email={email}&token={token}
 
                         If you did not initiate this request, you can safely disregard this email.
                         We take your privacy seriously. No further action is required if you did not initiate this request.
 
-                        © domain.com. All rights reserved.
-                        ",
-                Html = $@"<!DOCTYPE html>
+                        © {_settings.DomainUrl}. All rights reserved.
+                        ";
+        }
+
+        private string CreateHtml(string email, string code, string token)
+        {
+            return $@"
+                        <!DOCTYPE html>
                         <html lang='en'>
                         <head>
                             <meta charset=""UTF-8"">
+                            <meta name=""viewport"" content=""width=device-width, initial-scale=1.0""/>
                             <title>Your verification code</title>
                         </head>
                         <body style='margin:0; padding:32px; font-family: Inter, sans-serif; background-color: #F7F7F7; color:#1E1E20;'>
-                            <div style='max-width: 6600px; margin: 32px auto; background: #FFFFFF; border-radius: 16px; padding: 32px;'>
+                            <div style='max-width: 660px; margin: 32px auto; background: #FFFFFF; border-radius: 16px; padding: 32px;'>
 
                                 <h1 style='font-size: 32px; font-weight: 600; color: #37437D; margin-bottom: 16px; text-align: center;'>
                                     Verify Your Email Address
@@ -58,7 +69,7 @@ namespace VerificationServiceProvider.Factories
                                 </div>
 
                                 <div style='text-align: center; margin-bottom: 32px;'>
-                                    <a href='https://localhost:7065/account-verification?email={email}&token={token}' style='background-color: #F26CF9; color: #FFFFFF; padding: 12px 24px; border-radius: 20px; text-decoration: none; display: inline-block;'>
+                                    <a href='{_settings.FrontendUrl}{_settings.VerificationPath}?email={email}&token={token}' style='background-color: #F26CF9; color: #FFFFFF; padding: 12px 24px; border-radius: 20px; text-decoration: none; display: inline-block;'>
                                         Open Verification Page
                                     </a>
                                 </div>
@@ -72,12 +83,12 @@ namespace VerificationServiceProvider.Factories
                                 </p>
 
                                 <div style='font-size: 12px; color: #777779; text-align: center; margin-top: 24px;'>
-                                    © domain.com. All rights reserved.
+                                    © {_settings.DomainUrl}. All rights reserved.
                                 </div>
                             </div>
                         </body>
-                        </html> "
-            };
+                        </html> 
+                        ";
         }
     }
 }

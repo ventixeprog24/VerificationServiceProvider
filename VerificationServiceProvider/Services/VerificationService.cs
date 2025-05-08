@@ -1,50 +1,47 @@
 ﻿using Grpc.Core;
-using Microsoft.Extensions.Caching.Memory;
 using System.Diagnostics;
 using VerificationServiceProvider.Factories;
-using VerificationServiceProvider.Models;
+using VerificationServiceProvider.Interfaces;
+using VerificationServiceProvider.Models.Verification;
 
 namespace VerificationServiceProvider.Services
 {
-    public class VerificationService(IMemoryCache cache, IVerificationEmailFactory verificationEmailFactory) : VerificationContract.VerificationContractBase
+    public class VerificationService(IVerificationEmailFactory emailFactory, IVerificationCacheHandler cacheHandler, ICodeGenerator codeGenerator) : VerificationContract.VerificationContractBase
     {
-        private readonly IMemoryCache _cache = cache;
-        private readonly IVerificationEmailFactory _verificationEmailFactory = verificationEmailFactory;
+        private readonly IVerificationEmailFactory _emailFactory = emailFactory;
+        private readonly IVerificationCacheHandler _cacheHandler = cacheHandler;
+        private readonly ICodeGenerator _codeGenerator = codeGenerator;
         //private readonly EmailServiceProvider _emailService = emailService;
-        private static readonly Random _random = new();
 
         public override async Task<VerificationReply> SendVerificationCode(SendVerificationCodeRequest request, ServerCallContext context)
         {
             try
             {
                 if (request == null || string.IsNullOrWhiteSpace(request.Email))
-                    return VerificationReplyFactory.Failed("Recipient email address is required.");
+                    return VerificationReplyFactory.Failed("Email address is required.");
 
-                var verificationCode = GenerateVerificationCode();
-                var verificationToken = Guid.NewGuid().ToString(); //** Använda jwt servicen istället?
+                var verificationCode = _codeGenerator.GenerateVerificationCode();
+                var verificationToken = Guid.NewGuid().ToString();  //** Använda jwt servicen istället?
+                var emailMessage = _emailFactory.Create(request.Email, verificationCode, verificationToken);
 
-                var emailMessage = _verificationEmailFactory.Create(request.Email, verificationCode, verificationToken);
-
-                //** Använda EmailServiceProvider
+                //** Ersätta med EmailServiceProvider
                 var emailSent = await _emailService.SendEmailAsync(emailMessage);
                 if (!emailSent)
                     return VerificationReplyFactory.Failed("Failed to send verification email.");
 
-
-                SaveVerificationCode(new SaveVerificationCodeModel
+                _cacheHandler.SaveVerificationCode(new SaveVerificationCodeModel
                 {
                     Email = request.Email,
                     Code = verificationCode,
-                    ValidFor = TimeSpan.FromMinutes(5)
+                    ValidFor = TimeSpan.FromMinutes(15)
                 });
 
-                SaveVerificationToken(new SaveVerificationTokenModel
+                _cacheHandler.SaveVerificationToken(new SaveVerificationTokenModel
                 {
                     Email = request.Email,
                     Token = verificationToken,
-                    ValidFor = TimeSpan.FromMinutes(5)
+                    ValidFor = TimeSpan.FromMinutes(15)
                 });
-
 
                 return VerificationReplyFactory.Success("Verification email sent successfully.");
             }
@@ -57,47 +54,36 @@ namespace VerificationServiceProvider.Services
 
         public override Task<VerificationReply> ValidateVerificationCode(ValidateVerificationCodeRequest request, ServerCallContext context)
         {
-            var key = $"verification_code:{request.Email.ToLowerInvariant()}";
-
-            if (_cache.TryGetValue(key, out string? storedCode))
+            try
             {
-                if (storedCode == request.Code)
-                {
-                    _cache.Remove(key);
-                    return Task.FromResult(VerificationReplyFactory.Success());
-                }
+                var valid = _cacheHandler.ValidateCode(new CodeValidationModel { Email = request.Email, Code = request.Code });
+
+                return Task.FromResult(valid
+                    ? VerificationReplyFactory.Success()
+                    : VerificationReplyFactory.Failed("Invalid or expired verification code."));
             }
-            return Task.FromResult(VerificationReplyFactory.Failed("Invalid or expired verification code."));
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                return Task.FromResult(VerificationReplyFactory.Failed("Failed to validate verification code."));
+            }
         }
 
         public override Task<VerificationReply> ValidateVerificationToken(ValidateVerificationTokenRequest request, ServerCallContext context)
         {
-            var key = $"verification_token:{request.Email.ToLowerInvariant()}";
-
-            if (_cache.TryGetValue(key, out string? storedToken))
+            try
             {
-                if (storedToken == request.Token)
-                    return Task.FromResult(VerificationReplyFactory.Success());
+                var valid = _cacheHandler.ValidateToken(new TokenValidationModel { Email = request.Email, Token = request.Token });
+
+                return Task.FromResult(valid
+                    ? VerificationReplyFactory.Success()
+                    : VerificationReplyFactory.Failed("Invalid or expired verification token."));
             }
-            return Task.FromResult(VerificationReplyFactory.Failed("Invalid or expired verification token."));
-        }
-
-        public void SaveVerificationCode(SaveVerificationCodeModel model)
-        {
-            var key = $"verification_code:{model.Email.ToLowerInvariant()}";
-            _cache.Set(key, model.Code, model.ValidFor);
-        }
-
-        public void SaveVerificationToken(SaveVerificationTokenModel model)
-        {
-            var key = $"verification_token:{model.Email.ToLowerInvariant()}";
-            _cache.Set(key, model.Token, model.ValidFor);
-        }
-
-        private string GenerateVerificationCode()
-        {
-            var code = _random.Next(100000, 999999).ToString();
-            return code;
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                return Task.FromResult(VerificationReplyFactory.Failed("Failed to validate verification token."));
+            }
         }
     }
 }

@@ -1,4 +1,7 @@
 using VerificationServiceProvider.Factories;
+using VerificationServiceProvider.Infrastructure;
+using VerificationServiceProvider.Interfaces;
+using VerificationServiceProvider.Models.Email;
 using VerificationServiceProvider.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,7 +9,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddGrpc();
 builder.Services.AddMemoryCache();
 
-builder.Services.AddTransient<IVerificationEmailFactory, VerificationEmailFactory>();
+builder.Services.Configure<EmailVerificationOptions>(builder.Configuration.GetSection("EmailVerificationOptions"));
+
+builder.Services.AddSingleton<IVerificationEmailFactory, VerificationEmailFactory>();
+builder.Services.AddSingleton<ICodeGenerator, VerificationCodeGenerator>();
+builder.Services.AddTransient<IVerificationCacheHandler, VerificationCacheHandler>();
 
 var app = builder.Build();
 
