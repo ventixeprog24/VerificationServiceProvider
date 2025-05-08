@@ -1,10 +1,10 @@
-﻿using VerificationServiceProvider.Dtos;
+﻿using VerificationServiceProvider.Models;
 
 namespace VerificationServiceProvider.Interfaces
 {
     public interface IVerificationCacheHandler
     {
-        void SaveVerificationCode(SaveVerificationCodeDto validationData);
-        bool ValidateVerificationCode(CodeValidationDto validationData);
+        void SaveVerificationCode(SaveVerificationCodeModel model);
+        bool ValidateVerificationCode(CodeValidationModel model);
     }
 }

@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Options;
-using VerificationServiceProvider.Dtos;
+﻿using EmailServiceProvider;
+using Microsoft.Extensions.Options;
 using VerificationServiceProvider.Interfaces;
+using VerificationServiceProvider.Models;
 
 namespace VerificationServiceProvider.Factories
 {
@@ -8,19 +9,19 @@ namespace VerificationServiceProvider.Factories
     {
         private readonly EmailVerificationOptions _settings = options.Value;
 
-        // *** Ersätta med modellen från EmailServiceProvider Proto filen + i interfacet
-        public EmailMessage Create(string email, string code, string token)
+        public EmailRequest Create(VerificationEmailContentModel model)
         {
-            return new EmailMessage
+            return new EmailRequest
             {
-                Recipients = email,
-                Subject = $"Verification code: {code}",
-                PlainText = CreatePlainText(email, code, token),
-                Html = CreateHtml(email, code, token)
+                Recipients = { model.Email },
+                SenderAddress = _settings.SenderAddress,
+                Subject = $"Verification code: {model.Code}",
+                PlainText = CreatePlainText(model),
+                Html = CreateHtml(model)
             };
         }
 
-        private string CreatePlainText(string email, string code, string token)
+        private string CreatePlainText(VerificationEmailContentModel model)
         {
             return $@"
                         Verify Your Email Address
@@ -29,10 +30,10 @@ namespace VerificationServiceProvider.Factories
 
                         To complete your verification, please enter the following code:
 
-                        {code}
+                        {model.Code}
 
                         Alternatively, you can open the verification page using the following link:
-                        {_settings.FrontendUrl}{_settings.VerificationPath}?email={email}&token={token}
+                        {_settings.FrontendUrl}{_settings.VerificationPath}?email={model.Email}&token={model.Token}
 
                         If you did not initiate this request, you can safely disregard this email.
                         We take your privacy seriously. No further action is required if you did not initiate this request.
@@ -41,7 +42,7 @@ namespace VerificationServiceProvider.Factories
                         ";
         }
 
-        private string CreateHtml(string email, string code, string token)
+        private string CreateHtml(VerificationEmailContentModel model)
         {
             return $@"
                         <!DOCTYPE html>
@@ -65,11 +66,11 @@ namespace VerificationServiceProvider.Factories
                                 </p>
 
                                 <div style='display: flex; justify-content: center; align-items: center; padding: 16px; background-color: #FCD3FE; color: #1C2346; font-size: 32px; font-weight: 600; border-radius: 12px; margin-bottom: 24px; letter-spacing: 8px;'>
-                                    {code}
+                                    {model.Code}
                                 </div>
 
                                 <div style='text-align: center; margin-bottom: 32px;'>
-                                    <a href='{_settings.FrontendUrl}{_settings.VerificationPath}?email={email}&token={token}' style='background-color: #F26CF9; color: #FFFFFF; padding: 12px 24px; border-radius: 20px; text-decoration: none; display: inline-block;'>
+                                    <a href='{_settings.FrontendUrl}{_settings.VerificationPath}?email={model.Email}&token={model.Token}' style='background-color: #F26CF9; color: #FFFFFF; padding: 12px 24px; border-radius: 20px; text-decoration: none; display: inline-block;'>
                                         Open Verification Page
                                     </a>
                                 </div>

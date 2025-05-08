@@ -1,20 +1,21 @@
 ﻿using Grpc.Core;
 using JwtTokenServiceProvider;
 using System.Diagnostics;
-using VerificationServiceProvider.Dtos;
 using VerificationServiceProvider.Factories;
 using VerificationServiceProvider.Interfaces;
+using VerificationServiceProvider.Models;
+using EmailServiceClient = EmailServiceProvider.EmailServicer.EmailServicerClient;
 using JwtTokenServiceClient = JwtTokenServiceProvider.JwtTokenServiceContract.JwtTokenServiceContractClient;
 
 namespace VerificationServiceProvider.Services
 {
-    public class VerificationService(IVerificationEmailFactory emailFactory, IVerificationCacheHandler cacheHandler, ICodeGenerator codeGenerator, JwtTokenServiceClient jwtTokenService) : VerificationContract.VerificationContractBase
+    public class VerificationService(IVerificationEmailFactory emailFactory, IVerificationCacheHandler cacheHandler, ICodeGenerator codeGenerator, JwtTokenServiceClient jwtTokenService, EmailServiceClient emailService) : VerificationContract.VerificationContractBase
     {
         private readonly IVerificationEmailFactory _emailFactory = emailFactory;
         private readonly IVerificationCacheHandler _cacheHandler = cacheHandler;
         private readonly ICodeGenerator _codeGenerator = codeGenerator;
         private readonly JwtTokenServiceClient _jwtTokenService = jwtTokenService;
-        //private readonly EmailServiceProvider _emailService = emailService;
+        private readonly EmailServiceClient _emailService = emailService;
 
         public override async Task<VerificationReply> SendVerificationCode(SendVerificationCodeRequest request, ServerCallContext context)
         {
@@ -29,14 +30,18 @@ namespace VerificationServiceProvider.Services
                 if (!tokenReply.Succeeded)
                     return VerificationReplyFactory.Failed("Failed to generate token.");
 
-                var emailMessage = _emailFactory.Create(request.Email, code, tokenReply.TokenMessage);
+                var emailMessage = _emailFactory.Create(new VerificationEmailContentModel
+                {
+                    Email = request.Email,
+                    Code = code,
+                    Token = tokenReply.TokenMessage,
+                });
 
-                //** Ersätta med EmailServiceProvider
                 var emailSent = await _emailService.SendEmailAsync(emailMessage);
-                if (!emailSent)
+                if (!emailSent.Succeeded)
                     return VerificationReplyFactory.Failed("Failed to send verification email.");
 
-                _cacheHandler.SaveVerificationCode(new SaveVerificationCodeDto
+                _cacheHandler.SaveVerificationCode(new SaveVerificationCodeModel
                 {
                     Email = request.Email,
                     Code = code,
@@ -56,7 +61,7 @@ namespace VerificationServiceProvider.Services
         {
             try
             {
-                var valid = _cacheHandler.ValidateVerificationCode(new CodeValidationDto { Email = request.Email, Code = request.Code });
+                var valid = _cacheHandler.ValidateVerificationCode(new CodeValidationModel { Email = request.Email, Code = request.Code });
 
                 return Task.FromResult(valid
                     ? VerificationReplyFactory.Success("Valid code.")

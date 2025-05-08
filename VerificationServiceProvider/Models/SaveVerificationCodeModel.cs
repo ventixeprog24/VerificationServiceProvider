@@ -1,6 +1,6 @@
-﻿namespace VerificationServiceProvider.Dtos
+﻿namespace VerificationServiceProvider.Models
 {
-    public class SaveVerificationCodeDto
+    public class SaveVerificationCodeModel
     {
         public string Email { get; set; } = null!;
         public string Code { get; set; } = null!;

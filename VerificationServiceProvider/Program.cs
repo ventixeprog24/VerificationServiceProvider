@@ -1,9 +1,10 @@
 using VerificationServiceProvider.Components;
-using VerificationServiceProvider.Dtos;
 using VerificationServiceProvider.Factories;
 using VerificationServiceProvider.Interfaces;
 using VerificationServiceProvider.Services;
+using VerificationServiceProvider.Models;
 using JwtTokenServiceClient = JwtTokenServiceProvider.JwtTokenServiceContract.JwtTokenServiceContractClient;
+using EmailServiceClient = EmailServiceProvider.EmailServicer.EmailServicerClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,10 @@ builder.Services.Configure<EmailVerificationOptions>(builder.Configuration.GetSe
 builder.Services.AddGrpcClient<JwtTokenServiceClient>(o =>
 {
     o.Address = new Uri(builder.Configuration["Grpc:JwtTokenServiceProvider"]!);
+});
+builder.Services.AddGrpcClient<EmailServiceClient>(o =>
+{
+    o.Address = new Uri(builder.Configuration["Grpc:EmailServiceProvider"]!);
 });
 
 builder.Services.AddSingleton<IVerificationEmailFactory, VerificationEmailFactory>();

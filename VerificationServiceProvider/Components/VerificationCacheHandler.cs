@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
-using VerificationServiceProvider.Dtos;
 using VerificationServiceProvider.Interfaces;
+using VerificationServiceProvider.Models;
 
 namespace VerificationServiceProvider.Components
 {
@@ -8,17 +8,17 @@ namespace VerificationServiceProvider.Components
     {
         private readonly IMemoryCache _cache = cache;
 
-        public void SaveVerificationCode(SaveVerificationCodeDto validationData)
+        public void SaveVerificationCode(SaveVerificationCodeModel model)
         {
-            var key = validationData.Email.ToLowerInvariant();
-            _cache.Set(key, validationData.Code, validationData.ValidFor);
+            var key = model.Email.ToLowerInvariant();
+            _cache.Set(key, model.Code, model.ValidFor);
         }
 
-        public bool ValidateVerificationCode(CodeValidationDto validationData)
+        public bool ValidateVerificationCode(CodeValidationModel model)
         {
-            var key = validationData.Email.ToLowerInvariant();
+            var key = model.Email.ToLowerInvariant();
 
-            if (_cache.TryGetValue(key, out string? storedCode) && storedCode == validationData.Code)
+            if (_cache.TryGetValue(key, out string? storedCode) && storedCode == model.Code)
             {
                 _cache.Remove(key);
                 return true;

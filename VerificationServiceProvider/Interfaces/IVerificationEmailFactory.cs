@@ -1,7 +1,10 @@
-﻿namespace VerificationServiceProvider.Interfaces
+﻿using EmailServiceProvider;
+using VerificationServiceProvider.Models;
+
+namespace VerificationServiceProvider.Interfaces
 {
     public interface IVerificationEmailFactory
     { 
-        EmailMessage Create(string email, string code, string token);
+        EmailRequest Create(VerificationEmailContentModel model);
     }
 }
