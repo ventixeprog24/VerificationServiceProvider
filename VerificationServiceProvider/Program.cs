@@ -22,8 +22,8 @@ builder.Services.AddGrpcClient<EmailServiceClient>(o =>
     o.Address = new Uri(builder.Configuration["Grpc:EmailServiceProvider"]!);
 });
 
-builder.Services.AddSingleton<IVerificationEmailFactory, VerificationEmailFactory>();
-builder.Services.AddSingleton<ICodeGenerator, VerificationCodeGenerator>();
+builder.Services.AddTransient<IVerificationEmailFactory, VerificationEmailFactory>();
+builder.Services.AddTransient<ICodeGenerator, VerificationCodeGenerator>();
 builder.Services.AddTransient<IVerificationCacheHandler, VerificationCacheHandler>();
 
 var app = builder.Build();
