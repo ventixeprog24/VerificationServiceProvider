@@ -19,11 +19,11 @@ namespace VerificationServiceProvider.Services
 
         public override async Task<VerificationReply> SendVerificationCode(SendVerificationCodeRequest request, ServerCallContext context)
         {
+            if (request == null || string.IsNullOrWhiteSpace(request.Email))
+                return VerificationReplyFactory.Failed("Email address is required.");
+
             try
             {
-                if (request == null || string.IsNullOrWhiteSpace(request.Email))
-                    return VerificationReplyFactory.Failed("Email address is required.");
-
                 var code = _codeGenerator.GenerateVerificationCode();
 
                 var tokenReply = await _jwtTokenService.GenerateTokenAsync(new TokenRequest { Email = request.Email });
@@ -59,6 +59,9 @@ namespace VerificationServiceProvider.Services
 
         public override Task<VerificationReply> ValidateVerificationCode(ValidateVerificationCodeRequest request, ServerCallContext context)
         {
+            if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Code))
+                return Task.FromResult(VerificationReplyFactory.Failed("Missing required information."));
+
             try
             {
                 var valid = _cacheHandler.ValidateVerificationCode(new CodeValidationModel { Email = request.Email, Code = request.Code });
@@ -76,6 +79,9 @@ namespace VerificationServiceProvider.Services
 
         public override async Task<VerificationReply> ValidateVerificationToken(ValidateVerificationTokenRequest request, ServerCallContext context)
         {
+            if (request == null || string.IsNullOrWhiteSpace(request.Token))
+                return VerificationReplyFactory.Failed("Token is required.");
+
             try
             {
                 var valid = await _jwtTokenService.ValidateTokenAsync(new ValidateRequest { Token = request.Token });
