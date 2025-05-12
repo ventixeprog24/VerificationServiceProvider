@@ -2,7 +2,7 @@
 using VerificationServiceProvider.Interfaces;
 using VerificationServiceProvider.Models;
 
-namespace VerificationServiceProvider.Components
+namespace VerificationServiceProvider.Helpers
 {
     public class VerificationCacheHandler(IMemoryCache cache) : IVerificationCacheHandler
     {

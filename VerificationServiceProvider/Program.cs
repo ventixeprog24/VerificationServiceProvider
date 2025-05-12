@@ -1,10 +1,10 @@
-using VerificationServiceProvider.Components;
 using VerificationServiceProvider.Factories;
 using VerificationServiceProvider.Interfaces;
 using VerificationServiceProvider.Services;
 using VerificationServiceProvider.Models;
 using JwtTokenServiceClient = JwtTokenServiceProvider.JwtTokenServiceContract.JwtTokenServiceContractClient;
 using EmailServiceClient = EmailServiceProvider.EmailServicer.EmailServicerClient;
+using VerificationServiceProvider.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
