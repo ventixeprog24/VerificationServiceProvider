@@ -11,7 +11,7 @@ service JwtTokenServiceContract {
 }
 
 message TokenRequest {
-  string email = 2;
+  string email = 1;
 }
 
 message TokenReply {
