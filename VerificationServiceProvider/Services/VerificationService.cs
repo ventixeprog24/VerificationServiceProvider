@@ -26,15 +26,9 @@ namespace VerificationServiceProvider.Services
             {
                 var code = _codeGenerator.GenerateVerificationCode();
 
-                Console.WriteLine($"[DEBUG] Email before token request: {request.Email}");
-
                 var tokenReply = await _jwtTokenService.GenerateTokenAsync(new TokenRequest { Email = request.Email });
-
-                Console.WriteLine($"[DEBUG] TokenReply.Succeeded: {tokenReply.Succeeded}");
-                Console.WriteLine($"[DEBUG] TokenReply.Message: {tokenReply.TokenMessage}");
-
                 if (!tokenReply.Succeeded)
-                    return VerificationReplyFactory.Failed(tokenReply.TokenMessage);
+                    return VerificationReplyFactory.Failed("Failed to generate token.");
 
                 var emailMessage = _emailFactory.Create(new VerificationEmailContentModel
                 {
