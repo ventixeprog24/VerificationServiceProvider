@@ -9,8 +9,10 @@ namespace VerificationServiceProvider.Factories
     {
         private readonly EmailVerificationOptions _settings = options.Value;
 
-        public EmailRequest Create(VerificationEmailContentModel model)
+        public EmailRequest CreateVerificationEmail(VerificationEmailContentModel model)
         {
+            ArgumentNullException.ThrowIfNull(model);
+
             return new EmailRequest
             {
                 Recipients = { model.Email },
