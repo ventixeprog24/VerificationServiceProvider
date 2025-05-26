@@ -4,18 +4,16 @@ using System.Diagnostics;
 using VerificationServiceProvider.Factories;
 using VerificationServiceProvider.Interfaces;
 using VerificationServiceProvider.Models;
-using EmailServiceClient = EmailServiceProvider.EmailServicer.EmailServicerClient;
-using JwtTokenServiceClient = JwtTokenServiceProvider.JwtTokenServiceContract.JwtTokenServiceContractClient;
 
 namespace VerificationServiceProvider.Services
 {
-    public class VerificationService(IVerificationEmailFactory emailFactory, IVerificationCacheHandler cacheHandler, ICodeGenerator codeGenerator, JwtTokenServiceClient jwtTokenService, EmailServiceClient emailService) : VerificationContract.VerificationContractBase
+    public class VerificationService(IVerificationEmailFactory emailFactory, IVerificationCacheHandler cacheHandler, ICodeGenerator codeGenerator, IJwtTokenServiceClient jwtTokenService, IEmailServiceClient emailService) : VerificationContract.VerificationContractBase
     {
         private readonly IVerificationEmailFactory _emailFactory = emailFactory;
         private readonly IVerificationCacheHandler _cacheHandler = cacheHandler;
         private readonly ICodeGenerator _codeGenerator = codeGenerator;
-        private readonly JwtTokenServiceClient _jwtTokenService = jwtTokenService;
-        private readonly EmailServiceClient _emailService = emailService;
+        private readonly IJwtTokenServiceClient _jwtTokenService = jwtTokenService;
+        private readonly IEmailServiceClient _emailService = emailService;
 
         public override async Task<VerificationReply> SendVerificationCode(SendVerificationCodeRequest request, ServerCallContext context)
         {
@@ -30,7 +28,7 @@ namespace VerificationServiceProvider.Services
                 if (!tokenReply.Succeeded)
                     return VerificationReplyFactory.Failed("Failed to generate token.");
 
-                var emailMessage = _emailFactory.Create(new VerificationEmailContentModel
+                var emailMessage = _emailFactory.CreateVerificationEmail(new VerificationEmailContentModel
                 {
                     Email = request.Email,
                     Code = code,
@@ -59,7 +57,7 @@ namespace VerificationServiceProvider.Services
 
         public override Task<VerificationReply> ValidateVerificationCode(ValidateVerificationCodeRequest request, ServerCallContext context)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Code))
+            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Code))
                 return Task.FromResult(VerificationReplyFactory.Failed("Missing required information."));
 
             try

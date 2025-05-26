@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.13.35931.197 d17.13
+VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VerificationServiceProvider", "VerificationServiceProvider\VerificationServiceProvider.csproj", "{BECACCCF-8B90-4011-9F9A-733BD57CA5C4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{5CD05ACC-09E8-4510-9817-70C58F431624}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{BECACCCF-8B90-4011-9F9A-733BD57CA5C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BECACCCF-8B90-4011-9F9A-733BD57CA5C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BECACCCF-8B90-4011-9F9A-733BD57CA5C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CD05ACC-09E8-4510-9817-70C58F431624}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CD05ACC-09E8-4510-9817-70C58F431624}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CD05ACC-09E8-4510-9817-70C58F431624}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CD05ACC-09E8-4510-9817-70C58F431624}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

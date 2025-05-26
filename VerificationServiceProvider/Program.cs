@@ -2,9 +2,9 @@ using VerificationServiceProvider.Factories;
 using VerificationServiceProvider.Interfaces;
 using VerificationServiceProvider.Services;
 using VerificationServiceProvider.Models;
-using JwtTokenServiceClient = JwtTokenServiceProvider.JwtTokenServiceContract.JwtTokenServiceContractClient;
-using EmailServiceClient = EmailServiceProvider.EmailServicer.EmailServicerClient;
 using VerificationServiceProvider.Helpers;
+using EmailServiceProvider;
+using JwtTokenServiceProvider;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,11 +13,11 @@ builder.Services.AddMemoryCache();
 
 builder.Services.Configure<EmailVerificationOptions>(builder.Configuration.GetSection("EmailVerificationOptions"));
 
-builder.Services.AddGrpcClient<JwtTokenServiceClient>(o =>
+builder.Services.AddGrpcClient<JwtTokenServiceContract.JwtTokenServiceContractClient>(o =>
 {
     o.Address = new Uri(builder.Configuration["Grpc:JwtTokenServiceProvider"]!);
 });
-builder.Services.AddGrpcClient<EmailServiceClient>(o =>
+builder.Services.AddGrpcClient<EmailServicer.EmailServicerClient>(o =>
 {
     o.Address = new Uri(builder.Configuration["Grpc:EmailServiceProvider"]!);
 });
@@ -25,6 +25,8 @@ builder.Services.AddGrpcClient<EmailServiceClient>(o =>
 builder.Services.AddTransient<IVerificationEmailFactory, VerificationEmailFactory>();
 builder.Services.AddTransient<ICodeGenerator, VerificationCodeGenerator>();
 builder.Services.AddTransient<IVerificationCacheHandler, VerificationCacheHandler>();
+builder.Services.AddScoped<IJwtTokenServiceClient, JwtTokenServiceClientWrapper>();
+builder.Services.AddScoped<IEmailServiceClient, EmailServiceClientWrapper>();
 
 var app = builder.Build();
 
